@@ -29,15 +29,15 @@ object ExpiringStateExercise {
 
   def main(args: Array[String]) {
 
-    // parse parameters
+    // Параметры синтаксического анализа
     val params = ParameterTool.fromArgs(args)
     val ridesFile = params.get("rides", ExerciseBase.pathToRideData)
     val faresFile = params.get("fares", ExerciseBase.pathToFareData)
 
-    val maxDelay = 60            // events are out of order by max 60 seconds
-    val servingSpeedFactor = 600 // 10 minutes worth of events are served every second
+    val maxDelay = 60            // Максимальная задержка события - 60 секунд
+    val servingSpeedFactor = 600 // Каждую секунду происходит event, продолжительность - 10 минут
 
-    // set up streaming execution environment
+    // Настройка среды потокового выполнения
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.setParallelism(ExerciseBase.parallelism)
@@ -59,7 +59,7 @@ object ExpiringStateExercise {
   }
 
   class EnrichmentFunction extends KeyedCoProcessFunction[Long, TaxiRide, TaxiFare, (TaxiRide, TaxiFare)] {
-    // keyed, managed state
+    // Настроенное, управляемое состояние
     lazy val rideState: ValueState[TaxiRide] = getRuntimeContext.getState(
       new ValueStateDescriptor[TaxiRide]("saved ride", classOf[TaxiRide]))
     lazy val fareState: ValueState[TaxiFare] = getRuntimeContext.getState(
@@ -76,7 +76,7 @@ object ExpiringStateExercise {
       }
       else {
         rideState.update(ride)
-        // as soon as the watermark arrives, we can stop waiting for the corresponding fare
+        // Как только появится водяной знак, мы можем перестать ждать
         context.timerService.registerEventTimeTimer(ride.getEventTime)
       }
     }
@@ -92,7 +92,7 @@ object ExpiringStateExercise {
       }
       else {
         fareState.update(fare)
-        // as soon as the watermark arrives, we can stop waiting for the corresponding ride
+        // Как только появится водяной знак, мы можем перестать ждать соответствующей поездки
         context.timerService.registerEventTimeTimer(fare.getEventTime)
       }
     }
