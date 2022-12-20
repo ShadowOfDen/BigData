@@ -25,15 +25,15 @@ import org.apache.flink.util.Collector
 object RidesAndFaresExercise {
   def main(args: Array[String]) {
 
-    // parse parameters
+    // Параметры синтаксического анализа
     val params = ParameterTool.fromArgs(args)
     val ridesFile = params.get("rides", ExerciseBase.pathToRideData)
     val faresFile = params.get("fares", ExerciseBase.pathToFareData)
 
-    val delay = 60;               // at most 60 seconds of delay
-    val servingSpeedFactor = 1800 // 30 minutes worth of events are served every second
+    val delay = 60;               // Максимальная задержка события - 60 секунд
+    val servingSpeedFactor = 1800 // Каждую секунду происходит event, продолжительность - 10 минут
 
-    // set up streaming execution environment
+    // Настройка среды потокового выполнения
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(ExerciseBase.parallelism)
 
@@ -56,7 +56,7 @@ object RidesAndFaresExercise {
   }
 
   class EnrichmentFunction extends RichCoFlatMapFunction[TaxiRide, TaxiFare, (TaxiRide, TaxiFare)] {
-    // keyed, managed state
+    // Настроенное, управляемое состояние
     lazy val rideState: ValueState[TaxiRide] = getRuntimeContext.getState(
       new ValueStateDescriptor[TaxiRide]("saved ride", classOf[TaxiRide]))
     lazy val fareState: ValueState[TaxiFare] = getRuntimeContext.getState(
