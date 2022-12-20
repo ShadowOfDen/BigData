@@ -27,22 +27,22 @@ object HourlyTipsExercise {
 
   def main(args: Array[String]) {
 
-    // read parameters
+    // Считываем параметры
     val params = ParameterTool.fromArgs(args)
     val input = params.get("input", ExerciseBase.pathToFareData)
 
-    val maxDelay = 60 // events are delayed by at most 60 seconds
-    val speed = 600   // events of 10 minutes are served in 1 second
+    val maxDelay = 60 // Максимальная задержка события - 60 секунд
+    val speed = 600   // Каждую секунду происходит event, продолжительность - 10 минут
 
-    // set up streaming execution environment
+    // Настройка среды потокового выполнения
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     env.setParallelism(ExerciseBase.parallelism)
 
-    // start the data generator
+    // Запуск генерации данных
     val fares = env.addSource(fareSourceOrTest(new TaxiFareSource(input, maxDelay, speed)))
 
-    // total tips per hour by driver
+    // Общее количество чаевых в час от водителя
     val hourlyTips = fares
       .map((f: TaxiFare) => (f.driverId, f.tip))
       .keyBy(_._1)
@@ -51,15 +51,15 @@ object HourlyTipsExercise {
         (f1: (Long, Float), f2: (Long, Float)) => { (f1._1, f1._2 + f2._2) },
         new WrapWithWindowInfo())
 
-    // max tip total in each hour
+    // Максимальная сумма чаевых за каждый час
     val hourlyMax = hourlyTips
       .timeWindowAll(Time.hours(1))
       .maxBy(2)
 
-    // print result on stdout
+    // Вывод результата
     printOrTest(hourlyMax)
 
-    // execute the transformation pipeline
+    // Выполняем преобразование
     env.execute("Hourly Tips (scala)")
   }
 
